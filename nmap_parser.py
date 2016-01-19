@@ -6,8 +6,8 @@ TJS Deemer Dana LLP
 
 Nmap XML output parsing functions / utilities
 
-Currently limited to exporting to HTML and .TXT but hopefully more cool stuff
-to come!!!
+Currently limited to exporting XML scan results to HTML and .TXT but
+hopefully more cool stuff to come!!!
 
 See README.md for licensing information and credits
 
@@ -94,7 +94,7 @@ def main():
         infile_list.append(target)
     else:
         for infile in os.listdir(target):
-            if os.path.isfile(infile) and infile[-3:] == "xml":
+            if os.path.isfile(os.path.join(target,infile)) and infile[-3:] == "xml":
                 infile_list.append(os.path.join(target,infile))
     
     for infile in infile_list:
