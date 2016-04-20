@@ -43,11 +43,15 @@ def main():
     parser.add_argument('-o', '--outdir', action='store',
                         help='Output directory (default to specified target directory)'
     )
-    
+    parser.add_argument('-m', '--merge_files',
+                        help='Merge multiple input files into a single .nessus out file before processing',
+                        action='store_true'
+    )
     args = parser.parse_args()
     
     target = args.nessus_input
     outdir = args.outdir
+    is_merge = args.merge_files
     
     #------------------------------------------------------------------------------
     # Set up array of transforms to run
@@ -58,7 +62,7 @@ def main():
     transforms = []
     transforms.append(["patch_report", "./transforms/nessus_patch_status.xslt"])
     transforms.append(["compliance_report", "./transforms/nessus_compliance_report.xslt"])
-    
+    transforms.append(["metasploit_report", "./transforms/nessus_metasploit_available.xslt"])
     
     #------------------------------------------------------------------------------
     # Main stuff
@@ -88,6 +92,10 @@ def main():
         for infile in os.listdir(target):
             if os.path.isfile(os.path.join(target,infile)) and infile[-6:] == "nessus":
                 infile_list.append(os.path.join(target,infile))
+        if is_merge:
+            merge_nessus_files(infile_list,outdir)
+            infile_list.append(os.path.join(outdir,"combined_report.nessus"))
+                
     
     for infile in infile_list:
         for transform in transforms:
@@ -128,6 +136,32 @@ def output_file(outfile, output, overwrite=True):
     
     f.write(output)
     f.close
-    
+
+def merge_nessus_files(infile_list, outdir):
+    # logic borrowed from https://gist.github.com/mastahyeti/2720173
+
+    first = 1
+    for infile in infile_list:
+          if first:
+             mainTree = etree.parse(infile)
+             report = mainTree.find('Report')
+             report.attrib['name'] = 'Merged Report'
+             first = 0
+          else:
+             tree = etree.parse(infile)
+             for host in tree.findall('.//ReportHost'):
+                existing_host = report.find(".//ReportHost[@name='"+host.attrib['name']+"']")
+                if not existing_host:
+                    print "adding host: " + host.attrib['name']
+                    report.append(host)
+                else:
+                    for item in host.findall('ReportItem'):
+                        if not existing_host.find("ReportItem[@port='"+ item.attrib['port'] +"'][@pluginID='"+ item.attrib['pluginID'] +"']"):
+                            print "adding finding: " + item.attrib['port'] + ":" + item.attrib['pluginID']
+                            existing_host.append(item)
+          print(":: => done.")    
+       
+    mainTree.write(os.path.join(outdir,"combined_report.nessus"), encoding="utf-8", xml_declaration=True)
+
 if __name__ == '__main__':
     main()
