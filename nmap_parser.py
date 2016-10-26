@@ -203,7 +203,7 @@ class NmapHostScript(object):
 class NmapPort(object):
     def __init__(self):
         self.protocol=''    #tcp, udp
-        self.portid=''      #port number
+        self.portid=0       #port number
         self.state=''       #open, closed, etc
         self.svc_name=''
         self.svc_product=''
@@ -334,9 +334,9 @@ class NmapParser(object):
                 
                 nmap_host.ports.append(nmap_port)
             
-        
             nmap_scan.hosts.append(nmap_host)
-        print "done!!!"
+            
+        self.reports.append(nmap_scan)
             
     
 if __name__ == '__main__':

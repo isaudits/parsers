@@ -208,7 +208,6 @@ class NessusReportItem(object):
         self.port=''
         self.protocol=''
         self.svc_name=''
-        self.protocol=''
         self.severity=0
         
         self.agent=''
@@ -216,7 +215,7 @@ class NessusReportItem(object):
         self.cert=''
         self.cpe=''
         self.cve=[]
-        self.cvss_base_score=''
+        self.cvss_base_score=0.0
         self.cvss_vector=''
         self.description=''
         self.exploit_available=''
