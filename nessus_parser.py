@@ -6,12 +6,11 @@ TJS Deemer Dana LLP
 
 Nessus XML output parsing functions / utilities
 
-Currently, only runs an XSLT transform to generate an HTML patch status
-report - more stuff to come, though!
-
 Ideas:
-    Merge multiple nessus files
     Generate host lists, port lists, etc to text and HTML
+
+Credit Allesandro Di Pinto (YANP) for borrowed code for parsing class functions
+(https://github.com/adipinto/yet-another-nessus-parser)
 
 See README.md for licensing information and credits
 
@@ -47,11 +46,22 @@ def main():
                         help='Merge multiple input files into a single .nessus out file before processing',
                         action='store_true'
     )
+    parser.add_argument('-t', '--transform',
+                        help='Run XSLT transforms on specified .xml files',
+                        action='store_true'
+    )
+    parser.add_argument('-p', '--parse',
+                        help='Parse nessus output files',
+                        action='store_true'
+    )
     args = parser.parse_args()
     
     target = args.nessus_input
     outdir = args.outdir
     is_merge = args.merge_files
+    is_transform = args.transform
+    is_parse = args.parse
+
     
     #------------------------------------------------------------------------------
     # Set up array of transforms to run
@@ -92,20 +102,29 @@ def main():
         for infile in os.listdir(target):
             if os.path.isfile(os.path.join(target,infile)) and infile[-6:] == "nessus":
                 infile_list.append(os.path.join(target,infile))
-        if is_merge:
-            merge_nessus_files(infile_list,outdir)
-            infile_list.append(os.path.join(outdir,"combined_report.nessus"))
-                
+        
+    if is_merge:
+        merge_nessus_files(infile_list,outdir)
+        infile_list.append(os.path.join(outdir,"combined_report.nessus"))
     
-    for infile in infile_list:
-        for transform in transforms:
-            outfile_base = transform[0]
-            outfile_base += os.path.splitext(os.path.basename(infile))[0]
-            outfile_base = os.path.join(outdir,outfile_base)
-            transform_to_html(infile,outfile_base+'.html',transform[1])
-            
+    if is_transform:        
+        for infile in infile_list:
+            for transform in transforms:
+                outfile_base = transform[0]
+                outfile_base += os.path.splitext(os.path.basename(infile))[0]
+                outfile_base = os.path.join(outdir,outfile_base)
+                transform_to_html(infile,outfile_base+'.html',transform[1])
+    
+    #This currently doesnt really do anything - for debug purposes only            
+    if is_parse:
+        for infile in infile_list:
+            parse_xml(infile)
+        
     print "\n\nComplete!"
     print "Output data located at " + outdir
+
+def parse_xml(filename_xml):
+    parser = NessusParser(filename_xml)
 
 def transform_to_html(infile, outfile, xsl):
     '''
@@ -162,6 +181,180 @@ def merge_nessus_files(infile_list, outdir):
           print(":: => done.")    
        
     mainTree.write(os.path.join(outdir,"combined_report.nessus"), encoding="utf-8", xml_declaration=True)
+
+class NessusReport(object):
+    def __init__(self):
+        self.name=''
+        self.hosts=[]
+
+class NessusReportHost(object):
+    def __init__(self):
+        self.name=''
+        self.host_ip=''
+        self.scan_start=''
+        self.scan_end=''
+        self.host_fqdn=''
+        self.netbios_name=''
+        self.mac_address=''
+        self.operating_system=''
+        self.os=''
+        self.report_items=[]
+        
+class NessusReportItem(object):
+    def __init__(self):
+        self.plugin_id=''
+        self.plugin_name=''
+        self.plugin_family=''
+        self.port=''
+        self.protocol=''
+        self.svc_name=''
+        self.protocol=''
+        self.severity=0
+        
+        self.agent=''
+        self.bid=[]
+        self.cert=''
+        self.cpe=''
+        self.cve=[]
+        self.cvss_base_score=''
+        self.cvss_vector=''
+        self.description=''
+        self.exploit_available=''
+        self.exploit_framework_core=''
+        self.exploit_framework_metasploit=''
+        self.exploitability_ease=''
+        self.fname=''
+        self.iava=[]
+        self.msft=[]
+        self.osvdb=[]
+        self.patch_publication_date=''
+        #SKIP plugin_name since defined in host attribute section above
+        self.plugin_modification_date=''
+        self.plugin_type=''
+        self.risk_factor=''
+        self.script_version=''
+        self.see_also=''
+        self.solution=''
+        self.stig_severity=''
+        self.synopsis=''
+        self.vuln_publication_date=''
+        self.xref=[]
+        self.plugin_output=''
+        
+class NessusParser(object):
+    def __init__(self, filename_xml):
+        self.reports=[]
+        if filename_xml == None or filename_xml == "":
+            print "[!] No filename specified!"
+            exit(1)
+ 
+        # Parse input values in order to find valid .nessus files
+        self._xml_source = []
+        if os.path.isdir(filename_xml):
+            if not filename_xml.endswith("/"):
+                filename_xml += "/"
+            # Automatic searching of files into specified directory
+            for path, dirs, files in os.walk(filename_xml):
+                for f in files:
+                    if f.endswith(".nessus"):
+                        self._xml_source.append(filename_xml + f)
+                break
+        elif filename_xml.endswith(".nessus"):
+            if not os.path.exists(filename_xml):
+                print "[!] File specified '%s' not exist!" % filename_xml
+                exit(3)
+            self._xml_source.append(filename_xml)
+
+        if not self._xml_source:
+            print "[!] No file .nessus to parse was found!"
+            exit(3)
+        
+        # For each .nessus file found...
+        for report in self._xml_source:
+            # Parse and extract information
+            self._parse_results(report)
+
+    def _parse_results(self, file_report):
+        
+        tree = etree.parse(file_report)
+        
+        for report in tree.findall('Report'):
+        
+            nessus_report = NessusReport()
+            nessus_report.name = report.get('name')
+            
+            # For each host in report file, it extracts information
+            for host in report.findall('ReportHost'):
+                nessus_report_host = NessusReportHost()
+                # Get IP address
+                nessus_report_host.name = host.get('name')
+                if nessus_report_host.name:
+                    hostprops = host.find("HostProperties").findall("tag")
+                    
+                    for prop in hostprops:
+                        if prop.get('name') == 'host-ip':
+                            nessus_report_host.host_ip = prop.text
+                            
+                        if prop.get('name') == 'HOST_START':
+                            nessus_report_host.scan_start = prop.text
+                            
+                        if prop.get('name') == 'HOST_END':
+                            nessus_report_host.scan_end = prop.text
+                            
+                        if prop.get('name') == 'operating-system':
+                            nessus_report_host.operating_system = prop.text
+                            
+                        if prop.get('name') == 'os':
+                            nessus_report_host.os = prop.text
+                            
+                        if prop.get('name') == 'host-fqdn':
+                            nessus_report_host.host_fqdn = prop.text
+                            
+                        if prop.get('name') == 'netbios-name':
+                            nessus_report_host.netbios_name = prop.text
+                            
+                        if prop.get('name') == 'mac-address':
+                            nessus_report_host.mac_address = prop.text
+                                
+                    # Add information extracted to data structure
+                    nessus_report.hosts.append(nessus_report_host)
+                    
+                    reportitems = host.findall("ReportItem")
+                    for item in reportitems:
+                        nessus_report_item = NessusReportItem()
+                        # Extract generic vulnerability information
+                        nessus_report_item.plugin_name = item.get('pluginName')
+                        nessus_report_item.plugin_id = item.get('pluginID')
+                        nessus_report_item.port = item.get('port')
+                        nessus_report_item.protocol = item.get('protocol')
+                        nessus_report_item.description = item.get('description')
+                        nessus_report_item.svc_name = item.get('svc_name')
+                        nessus_report_item.severity = int(item.get('severity'))
+
+                        # Report item child nodes to be extracted are enumerated in the following arrays;
+                        # text_nodes contains all unique nodes
+                        # array_nodes contains nodes in which multiple instances can be found; these are returned as a list
+                        text_nodes=['agent','cert','cpe','cvss_base_score','cvss_vector','description','exploit_available','exploit_framework_core',
+                                    'exploit_framework_metasploit','exploitability_ease','patch_publication_date','plugin_modification_date','plugin_type',
+                                    'risk_factor','script_version','see_also','solution','stig_severity','synopsis','vuln_publication_date','plugin_output']
+                        
+                        array_nodes=['bid','cve','iava','msft','osvdb','xref']
+
+                        for node in text_nodes:
+                            if item.find(node) is not None:
+                                setattr(nessus_report_item,node,item.find(node).text)
+                                
+                        for node in array_nodes:
+                            if item.find(node) is not None:
+                                array=[]
+                                for hit in item.findall(node):
+                                    array.append(hit.text)
+                                setattr(nessus_report_item,node,array)
+                        
+                        nessus_report_host.report_items.append(nessus_report_item)
+        
+        self.reports.append(nessus_report)
+
 
 if __name__ == '__main__':
     main()

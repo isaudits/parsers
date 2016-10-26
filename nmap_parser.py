@@ -6,9 +6,6 @@ TJS Deemer Dana LLP
 
 Nmap XML output parsing functions / utilities
 
-Currently limited to exporting XML scan results to HTML and .TXT but
-hopefully more cool stuff to come!!!
-
 See README.md for licensing information and credits
 
 '''
@@ -52,6 +49,10 @@ def main():
     parser.add_argument('--xsl', action='store',
                         help='Nmap xml stylesheet (defaults to xml-stylesheet from nmap XML files)'
     )
+    parser.add_argument('-p', '--parse',
+                        help='Parse nessus output files',
+                        action='store_true'
+    )
     args = parser.parse_args()
     
     target = args.nmap_input
@@ -59,6 +60,7 @@ def main():
     xsl = args.xsl
     is_text = args.text
     is_html = args.html
+    is_parse = args.parse
     
     #------------------------------------------------------------------------------
     # Main stuff
@@ -80,8 +82,11 @@ def main():
         print 'no output directory specified - using ' + outdir
         print ''
     
+    if is_parse:
+        parse_xml(target)
+    
     # No output options specified - enable all!
-    if not is_text and not is_html:
+    elif not is_text and not is_html:
         is_text = True
         is_html = True
     
@@ -155,6 +160,184 @@ def output_file(outfile, output, overwrite=True):
     f.write(output)
     f.close
 
+def parse_xml(filename_xml):
+    parser = NmapParser(filename_xml)
+
+
+class NmapScan(object):
+    def __init__(self):
+        self.startstr=''
+        self.profile_name=''
+        self.scanner=''
+        self.version=''
+        self.args=''
+        self.services=''
+        self.protocol=''
+        self.numservices=''
+        self.type=''
+        self.output=''
+        self.hosts=[]
+
+class NmapHost(object):
+    def __init__(self):
+        self.status=''      #up or down
+        self.addr_ipv4=''
+        self.addr_ipv6=''
+        self.addr_mac=''
+        self.addr_mac_vendor=''
+        self.hostnames=[]
+        self.os_name=''
+        self.os_accuracy=0
+        self.os_type=''
+        self.os_family=''
+        self.os_vendor=''
+        self.os_gen=''
+        self.ports=[]
+        self.host_scripts=[]
+        
+class NmapHostScript(object):
+    def __init__(self):
+        self.host_script_id=''
+        self.host_script_output=''
+        
+class NmapPort(object):
+    def __init__(self):
+        self.protocol=''    #tcp, udp
+        self.portid=''      #port number
+        self.state=''       #open, closed, etc
+        self.svc_name=''
+        self.svc_product=''
+        self.svc_version=''
+        self.svc_extrainfo=''
+        self.svc_conf=0
+        self.port_scripts=[]
+
+class NmapPortScript(object):
+    def __init__(self):
+        self.port_script_id=''
+        self.port_script_output=''
+        
+class NmapParser(object):
+    def __init__(self, filename_xml):
+        self.reports=[]
+        if filename_xml == None or filename_xml == "":
+            print "[!] No filename specified!"
+            exit(1)
+ 
+        # Parse input values in order to find valid .xml files
+        self._xml_source = []
+        if os.path.isdir(filename_xml):
+            if not filename_xml.endswith("/"):
+                filename_xml += "/"
+            # Automatic searching of files into specified directory
+            for path, dirs, files in os.walk(filename_xml):
+                for f in files:
+                    if f.endswith(".xml"):
+                        self._xml_source.append(filename_xml + f)
+                break
+        elif filename_xml.endswith(".xml"):
+            if not os.path.exists(filename_xml):
+                print "[!] File specified '%s' not exist!" % filename_xml
+                exit(3)
+            self._xml_source.append(filename_xml)
+
+        if not self._xml_source:
+            print "[!] No file .xml to parse was found!"
+            exit(3)
+        
+        # For each .xml file found...
+        for file_nmaprun in self._xml_source:
+            # Parse and extract information
+            self._parse_results(file_nmaprun)
+
+    def _parse_results(self, file_nmaprun):
+        
+        tree = etree.parse(file_nmaprun)
+        
+        nmaprun = tree.getroot()    
+        nmap_scan=NmapScan()
+        nmap_scan.startstr = nmaprun.get('startstr')
+        nmap_scan.profile_name = nmaprun.get('profile_name')
+        nmap_scan.scanner = nmaprun.get('scanner')
+        nmap_scan.version = nmaprun.get('version')
+        nmap_scan.args = nmaprun.get('args')
+        
+        scaninfo = nmaprun.find('scaninfo')
+        nmap_scan.services = scaninfo.get('services')
+        nmap_scan.protocol = scaninfo.get('protocol')
+        nmap_scan.numservices = scaninfo.get('numservices')
+        nmap_scan.type = scaninfo.get('type')
+        
+        output = nmaprun.find('output')
+        if output is not None:
+            nmap_scan.output = output.text
+        
+        for host in nmaprun.findall('host'):
+            nmap_host=NmapHost()
+            
+            nmap_host.status = host.find('status').get('state')
+            
+            for address in host.findall('address'):
+                if address.get('addrtype')=='ipv4':
+                    nmap_host.addr_ipv4=address.get('addr')
+                if address.get('addrtype')=='ipv6':
+                    nmap_host.addr_ipv6=address.get('addr')
+                if address.get('addrtype')=='mac':
+                    nmap_host.addr_mac=address.get('addr')
+                    nmap_host.addr_mac_vendor=address.get('vendor')
+            
+            hostnames = host.find('hostnames')
+            for hostname in hostnames.findall('hostname'):
+                nmap_host.hostnames.append(hostname.get('name'))
+            
+            os=host.find('os')
+            if os is not None:
+                osmatch=os.find('osmatch')
+                if osmatch is not None:
+                    nmap_host.os_name = osmatch.get('name')
+                    nmap_host.os_accuracy = int(osmatch.get('accuracy'))
+                    osclass=osmatch.find('osclass')
+                    if osclass is not None:
+                        nmap_host.os_type=osclass.get('type')
+                        nmap_host.os_family=osclass.get('osfamily')
+                        nmap_host.os_vendor=osclass.get('vendor')
+                        nmap_host.os_gen=osclass.get('osgen')
+            
+            hostscript=host.find('hostscript')
+            if hostscript is not None:
+                scripts=hostscript.findall('script')
+                for script in scripts:
+                    nmap_host_script=NmapHostScript()
+                    nmap_host_script.host_script_id=script.get('id')
+                    nmap_host_script.host_script_output=script.get('output')
+                    nmap_host.host_scripts.append(nmap_host_script)
+                
+            
+            ports=host.find('ports')
+            for port in ports.findall('port'):
+                nmap_port=NmapPort()
+                nmap_port.protocol=port.get('protocol')
+                nmap_port.portid=port.get('portid')
+                nmap_port.state=port.find('state').get('state')
+                nmap_port.svc_name=port.find('service').get('name')
+                nmap_port.svc_product=port.find('service').get('product')
+                nmap_port.svc_version=port.find('service').get('version')
+                nmap_port.svc_extrainfo=port.find('service').get('extrainfo')
+                nmap_port.svc_conf=port.find('service').get('conf')
+                
+                scripts=port.findall('script')
+                for script in scripts:
+                    nmap_port_script=NmapPortScript()
+                    nmap_port_script.port_script_id=script.get('id')
+                    nmap_port_script.port_script_output=script.get('output')
+                    nmap_port.port_scripts.append(nmap_port_script)
+                
+                nmap_host.ports.append(nmap_port)
+            
+        
+            nmap_scan.hosts.append(nmap_host)
+        print "done!!!"
+            
     
 if __name__ == '__main__':
     main()
