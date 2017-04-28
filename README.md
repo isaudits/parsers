@@ -11,6 +11,8 @@ Miscellaneous parsing scripts for penetration testing:
     - Merge multiple .nessus files into a single output file
     - Run xslt transforms on .nessus files
     - Parse .nessus files into custom object classes for further manipulation
+    
+- openvas_parser.py - parses openvas xml output
 
 -------------------------------------------------------------------------------
 
