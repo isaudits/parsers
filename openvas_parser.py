@@ -210,41 +210,49 @@ class OpenvasReportItem(object):
         self.qod_type=''
         
 class OpenvasParser(object):
-    def __init__(self, filename_xml):
+    def __init__(self, filename_xml='', xml=''):
         self.reports=[]
-        if filename_xml == None or filename_xml == "":
-            print "[!] No filename specified!"
-            exit(1)
- 
-        # Parse input values in order to find valid .xml files
-        self._xml_source = []
-        if os.path.isdir(filename_xml):
-            if not filename_xml.endswith("/"):
-                filename_xml += "/"
-            # Automatic searching of files into specified directory
-            for path, dirs, files in os.walk(filename_xml):
-                for f in files:
-                    if f.endswith(".xml"):
-                        self._xml_source.append(filename_xml + f)
-                break
-        elif filename_xml.endswith(".xml"):
-            if not os.path.exists(filename_xml):
-                print "[!] File specified '%s' not exist!" % filename_xml
+        
+        if filename_xml:
+            # Parse input values in order to find valid .xml files
+            self._xml_source = []
+            if os.path.isdir(filename_xml):
+                if not filename_xml.endswith("/"):
+                    filename_xml += "/"
+                # Automatic searching of files into specified directory
+                for path, dirs, files in os.walk(filename_xml):
+                    for f in files:
+                        if f.endswith(".xml"):
+                            self._xml_source.append(filename_xml + f)
+                    break
+            elif filename_xml.endswith(".xml"):
+                if not os.path.exists(filename_xml):
+                    print "[!] File specified '%s' not exist!" % filename_xml
+                    exit(3)
+                self._xml_source.append(filename_xml)
+    
+            if not self._xml_source:
+                print "[!] No file .xml to parse was found!"
                 exit(3)
-            self._xml_source.append(filename_xml)
+            
+            # For each .nessus file found...
+            for report in self._xml_source:
+                # Parse and extract information
+                self._parse_results(report)
+                
+        elif xml:
+            self._parse_results('',xml)
+            
+        else:
+            print "[!] No xml data passed to parser!"
+            exit(1)
 
-        if not self._xml_source:
-            print "[!] No file .xml to parse was found!"
-            exit(3)
+    def _parse_results(self, file_report='', xml_report=''):
         
-        # For each .nessus file found...
-        for report in self._xml_source:
-            # Parse and extract information
-            self._parse_results(report)
-
-    def _parse_results(self, file_report):
-        
-        tree = etree.parse(file_report)
+        if file_report:
+            tree = etree.parse(file_report)
+        elif xml_report:
+            tree = etree.fromstring(xml_report)
         
         for report in tree.findall('./report'):
         
