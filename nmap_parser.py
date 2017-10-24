@@ -196,6 +196,11 @@ class NmapHost(object):
         self.host_scripts=[]
         
 class NmapHostScript(object):
+    '''
+    TODO - we should probably have same object for scripts regardless of whether
+    they are host scripts or port scripts...just make them sub-objects of a port
+    versus a host cause they hold the same info...
+    '''
     def __init__(self):
         self.host_script_id=''
         self.host_script_output=''
@@ -218,43 +223,56 @@ class NmapPortScript(object):
         self.port_script_output=''
         
 class NmapParser(object):
-    def __init__(self, filename_xml):
+    '''
+    TODO - add better file validation and move into a separate method
+    '''
+    def __init__(self, filename_xml='', xml=''):
         self.reports=[]
-        if filename_xml == None or filename_xml == "":
-            print "[!] No filename specified!"
-            exit(1)
- 
-        # Parse input values in order to find valid .xml files
-        self._xml_source = []
-        if os.path.isdir(filename_xml):
-            if not filename_xml.endswith("/"):
-                filename_xml += "/"
-            # Automatic searching of files into specified directory
-            for path, dirs, files in os.walk(filename_xml):
-                for f in files:
-                    if f.endswith(".xml"):
-                        self._xml_source.append(filename_xml + f)
-                break
-        elif filename_xml.endswith(".xml"):
-            if not os.path.exists(filename_xml):
-                print "[!] File specified '%s' not exist!" % filename_xml
+        
+        if filename_xml:
+            # Parse input values in order to find valid .xml files
+            self._xml_source = []
+            if os.path.isdir(filename_xml):
+                if not filename_xml.endswith("/"):
+                    filename_xml += "/"
+                # Automatic searching of files into specified directory
+                for path, dirs, files in os.walk(filename_xml):
+                    for f in files:
+                        if f.endswith(".xml"):
+                            self._xml_source.append(filename_xml + f)
+                    break
+            elif filename_xml.endswith(".xml"):
+                if not os.path.exists(filename_xml):
+                    print "[!] File specified '%s' not exist!" % filename_xml
+                    exit(3)
+                self._xml_source.append(filename_xml)
+    
+            if not self._xml_source:
+                print "[!] No file .xml to parse was found!"
                 exit(3)
-            self._xml_source.append(filename_xml)
+            
+            # For each .xml file found...
+            for file_nmaprun in self._xml_source:
+                # Parse and extract information
+                self._parse_results(file_nmaprun)
+                
+        elif xml:
+            self._parse_results('', xml)
+            
+        else:
+            print "[!] No xml data passed to parser!"
+            exit(1)
 
-        if not self._xml_source:
-            print "[!] No file .xml to parse was found!"
-            exit(3)
+    def _parse_results(self, file_nmaprun='', xml_nmaprun=''):
         
-        # For each .xml file found...
-        for file_nmaprun in self._xml_source:
-            # Parse and extract information
-            self._parse_results(file_nmaprun)
-
-    def _parse_results(self, file_nmaprun):
+        if file_nmaprun:
+            tree = etree.parse(file_nmaprun)
+            nmaprun = tree.getroot()  
+        elif xml_nmaprun:
+            nmaprun = etree.fromstring(xml_nmaprun)
+        else:
+            exit(1)
         
-        tree = etree.parse(file_nmaprun)
-        
-        nmaprun = tree.getroot()    
         nmap_scan=NmapScan()
         nmap_scan.startstr = nmaprun.get('startstr')
         nmap_scan.profile_name = nmaprun.get('profile_name')
