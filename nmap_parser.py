@@ -15,10 +15,10 @@ import os
 try:
     from lxml import etree
 except:
-    print "lxml module not installed try: "
-    print "pip install lxml"
-    print "     ----- OR -----"
-    print "apt-get install python-lxml"
+    print("lxml module not installed try: ")
+    print("pip install lxml")
+    print("     ----- OR -----")
+    print("apt-get install python-lxml")
     
 
 def main():
@@ -68,9 +68,9 @@ def main():
     
     if not target:
         target = os.getcwd()
-        print 'no  input file or directory specified - using working directory:'
-        print target
-        print ''
+        print('no  input file or directory specified - using working directory:')
+        print(target)
+        print('')
         
     
     # No output directory specified - use same directory as input target file/dir
@@ -79,8 +79,8 @@ def main():
             outdir = os.path.dirname(target)
         else:
             outdir = target
-        print 'no output directory specified - using ' + outdir
-        print ''
+        print('no output directory specified - using ' + outdir)
+        print('')
     
     if is_parse:
         parse_xml(target)
@@ -90,8 +90,8 @@ def main():
         is_text = True
         is_html = True
     
-    print 'Text output enabled: ' + str(is_text)
-    print 'HTML output enabled: ' + str(is_html)
+    print('Text output enabled: ' + str(is_text))
+    print('HTML output enabled: ' + str(is_html))
     
     infile_list = []
     
@@ -109,8 +109,8 @@ def main():
         if is_html:
             nmap_out_to_html(infile,outfile_base+'.html',xsl)
             
-    print "\n\nComplete!"
-    print "Output data located at " + outdir
+    print("\n\nComplete!")
+    print("Output data located at " + outdir)
 
 def nmap_out_to_html(infile, outfile, xsl=''):
     '''
@@ -136,10 +136,10 @@ def nmap_out_to_html(infile, outfile, xsl=''):
         output_file(outfile,output)
         
     except:
-        print ''
-        print '[!] Error parsing XSL for file '
-        print ' -  make sure that the XSL transform is present and valid:'
-        print ' -  ' + xsl
+        print('')
+        print('[!] Error parsing XSL for file ')
+        print(' -  make sure that the XSL transform is present and valid:')
+        print(' -  ' + xsl)
     
 def nmap_out_to_txt(infile, outfile):
     output = ''
@@ -243,12 +243,12 @@ class NmapParser(object):
                     break
             elif filename_xml.endswith(".xml"):
                 if not os.path.exists(filename_xml):
-                    print "[!] File specified '%s' not exist!" % filename_xml
+                    print("[!] File specified '%s' not exist!" % filename_xml)
                     exit(3)
                 self._xml_source.append(filename_xml)
     
             if not self._xml_source:
-                print "[!] No file .xml to parse was found!"
+                print("[!] No file .xml to parse was found!")
                 exit(3)
             
             # For each .xml file found...
@@ -260,7 +260,7 @@ class NmapParser(object):
             self._parse_results('', xml)
             
         else:
-            print "[!] No xml data passed to parser!"
+            print("[!] No xml data passed to parser!")
             exit(1)
 
     def _parse_results(self, file_nmaprun='', xml_nmaprun=''):

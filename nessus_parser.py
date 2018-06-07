@@ -21,10 +21,10 @@ import os
 try:
     from lxml import etree
 except:
-    print "lxml module not installed try: "
-    print "pip install lxml"
-    print "     ----- OR -----"
-    print "apt-get install python-lxml"
+    print("lxml module not installed try: ")
+    print("pip install lxml")
+    print("     ----- OR -----")
+    print("apt-get install python-lxml")
     
 
 def main():
@@ -80,9 +80,9 @@ def main():
     
     if not target:
         target = os.getcwd()
-        print 'no  input file or directory specified - using working directory:'
-        print target
-        print ''
+        print('no  input file or directory specified - using working directory:')
+        print(target)
+        print('')
         
     
     # No output directory specified - use same directory as input target file/dir
@@ -91,8 +91,8 @@ def main():
             outdir = os.path.dirname(target)
         else:
             outdir = target
-        print 'no output directory specified - using ' + outdir
-        print ''
+        print('no output directory specified - using ' + outdir)
+        print('')
     
     infile_list = []
     
@@ -120,8 +120,8 @@ def main():
         for infile in infile_list:
             parse_xml(infile)
         
-    print "\n\nComplete!"
-    print "Output data located at " + outdir
+    print("\n\nComplete!")
+    print("Output data located at " + outdir)
 
 def parse_xml(filename_xml):
     parser = NessusParser(filename_xml)
@@ -142,10 +142,10 @@ def transform_to_html(infile, outfile, xsl):
         output_file(outfile,output)
         
     except:
-        print ''
-        print '[!] Error parsing XSL for file '
-        print ' -  make sure that the XSL transform is present and valid:'
-        print ' -  ' + xsl
+        print('')
+        print('[!] Error parsing XSL for file ')
+        print(' -  make sure that the XSL transform is present and valid:')
+        print(' -  ' + xsl)
 
 def output_file(outfile, output, overwrite=True):
     if overwrite == True:
@@ -171,12 +171,12 @@ def merge_nessus_files(infile_list, outdir):
              for host in tree.findall('.//ReportHost'):
                 existing_host = report.find(".//ReportHost[@name='"+host.attrib['name']+"']")
                 if not existing_host:
-                    print "adding host: " + host.attrib['name']
+                    print("adding host: " + host.attrib['name'])
                     report.append(host)
                 else:
                     for item in host.findall('ReportItem'):
                         if not existing_host.find("ReportItem[@port='"+ item.attrib['port'] +"'][@pluginID='"+ item.attrib['pluginID'] +"']"):
-                            print "adding finding: " + item.attrib['port'] + ":" + item.attrib['pluginID']
+                            print("adding finding: " + item.attrib['port'] + ":" + item.attrib['pluginID'])
                             existing_host.append(item)
           print(":: => done.")    
        
@@ -258,12 +258,12 @@ class NessusParser(object):
                     break
             elif filename_xml.endswith(".nessus"):
                 if not os.path.exists(filename_xml):
-                    print "[!] File specified '%s' not exist!" % filename_xml
+                    print("[!] File specified '%s' not exist!" % filename_xml)
                     exit(3)
                 self._xml_source.append(filename_xml)
     
             if not self._xml_source:
-                print "[!] No file .nessus to parse was found!"
+                print("[!] No file .nessus to parse was found!")
                 exit(3)
             
             # For each .nessus file found...
@@ -275,7 +275,7 @@ class NessusParser(object):
             self._parse_results('', xml)
             
         else:
-            print "[!] No xml data passed to parser!"
+            print("[!] No xml data passed to parser!")
             exit(1)
 
     def _parse_results(self, file_report='', xml_report=''):
