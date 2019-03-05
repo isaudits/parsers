@@ -193,17 +193,7 @@ class NmapHost(object):
         self.os_vendor=''
         self.os_gen=''
         self.ports=[]
-        self.host_scripts=[]
-        
-class NmapHostScript(object):
-    '''
-    TODO - we should probably have same object for scripts regardless of whether
-    they are host scripts or port scripts...just make them sub-objects of a port
-    versus a host cause they hold the same info...
-    '''
-    def __init__(self):
-        self.host_script_id=''
-        self.host_script_output=''
+        self.scripts=[]
         
 class NmapPort(object):
     def __init__(self):
@@ -215,9 +205,9 @@ class NmapPort(object):
         self.svc_version=''
         self.svc_extrainfo=''
         self.svc_conf=0
-        self.port_scripts=[]
+        self.scripts=[]
 
-class NmapPortScript(object):
+class NmapScript(object):
     def __init__(self):
         self.port_script_id=''
         self.port_script_output=''
@@ -325,10 +315,10 @@ class NmapParser(object):
             if hostscript is not None:
                 scripts=hostscript.findall('script')
                 for script in scripts:
-                    nmap_host_script=NmapHostScript()
-                    nmap_host_script.host_script_id=script.get('id')
-                    nmap_host_script.host_script_output=script.get('output')
-                    nmap_host.host_scripts.append(nmap_host_script)
+                    nmap_host_script=NmapScript()
+                    nmap_host_script.id=script.get('id')
+                    nmap_host_script.output=script.get('output')
+                    nmap_host.scripts.append(nmap_host_script)
                 
             
             ports=host.find('ports')
@@ -345,10 +335,10 @@ class NmapParser(object):
                 
                 scripts=port.findall('script')
                 for script in scripts:
-                    nmap_port_script=NmapPortScript()
-                    nmap_port_script.port_script_id=script.get('id')
-                    nmap_port_script.port_script_output=script.get('output')
-                    nmap_port.port_scripts.append(nmap_port_script)
+                    nmap_port_script=NmapScript()
+                    nmap_port_script.id=script.get('id')
+                    nmap_port_script.output=script.get('output')
+                    nmap_port.scripts.append(nmap_port_script)
                 
                 nmap_host.ports.append(nmap_port)
             
