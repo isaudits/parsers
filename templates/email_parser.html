@@ -1,0 +1,167 @@
+<!-- Base template from https://getbootstrap.com/docs/4.4/getting-started/introduction/ -->
+
+<!doctype html>
+<html lang="en">
+  <head>
+	<!-- Required meta tags -->
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+	<!-- Bootstrap CSS -->
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.15.5/dist/bootstrap-table.min.css">
+
+	<title>Mail header analysis</title>
+  </head>
+  <body>
+	<!-- Begin page content -->
+    <div class="container-fluid" style="padding-top: 50px;">
+        {% if data %}
+        <div class="well well-lg">
+            
+            <table id="emails" class="table table-sm table-responsive-sm table-condensed small table-hover table-striped">
+                <thead>
+                  <tr>
+                    <th scope="col">Source Ref</th>
+                    <th scope="col">Date / Time</th>
+                    <th scope="col">Originating IP</th>
+                    <th scope="col">From</th>
+                    <th scope="col">To</th>
+                    <th scope="col">CC</th>
+                    <th scope="col">Reply To</th>
+                    <th scope="col">Subject</th>
+                    <th scope="col">Body synopsis</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in data %}
+                    <tr class="clickable" data-toggle="collapse" data-target="#detail-{{ loop.index }}" data-parent="#emails" >
+                      <td><a href="{{ item.outfile | e }}">{{ item.ref | e }}</a></td>
+                      <td>{{ item.date }}</td>
+                      <td>{{ item.other_headers['x-originating-ip'] }}</td>
+                      <td>{{ item.mail_from | e }}</td>
+                      <td>{{ item.mail_to | e }}</td>
+                      <td>{{ item.mail_cc | e }}</td>
+                      <td>{{ item.reply_to | e }}</td>
+                      <td>{{ item.subject | e }}</td>
+                      <td>{{ item.body_text | e | truncate(150) }}</td>
+                    </tr>
+                    
+                    <tr id="detail-{{ loop.index }}" class="collapse">
+                        <td colspan=6>
+                            
+                            <div id="hops-{{ loop.index }}" class="card">
+                                <div class="card-header">
+                                    <a class="card-link" data-toggle="collapse" href="#collapseHops-{{ loop.index }}">Transport hops</a>
+                                </div>
+        
+                                <div id="collapseHops-{{ loop.index }}" class="collapse">
+                                    <div class="card-body">
+                                        <table data-toggle="table" data-show-columns="true" data-striped="true" data-show-toggle="true" data-show-refresh="true" data-page-size="13" data-sort-name="hop" data-sort-order="asc">
+                                            <thead>
+                                            <tr>
+                                                <th data-field="hop" data-sortable="true">Hop</th>
+                                                <th data-sortable="true">From</th>
+                                                <th data-sortable="true">By</th>
+                                                <th data-sortable="true">With</th>
+                                                <th data-sortable="true">Time</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            {% for hop, data in item.hops.items() %}
+                                            <tr>
+                                              <td>{{ hop }}</td>
+                                              <td>{{ data.From | e }}</td>
+                                              <td>{{ data.By | e }}</td>
+                                              <td>{{ data.With | e }}</td>
+                                              <td>{{ data.Timestamp | e }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="securityHeaders-{{ loop.index }}" class="card">
+                                <div class="card-header">
+                                    <a class="card-link" data-toggle="collapse" href="#collapseSecurity-{{ loop.index }}">Security headers</a>
+                                </div>
+        
+                                <div id="collapseSecurity-{{ loop.index }}" class="collapse">
+                                    <div class="card-body">
+                                        <table>
+                                            {% for header, data in item.security_headers.items() %}
+                                            <tr>
+                                              <td>{{ header | e}}</td>
+                                              <td "word-break: break-all">{{ data | e }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+        
+                            <div id="otherHeaders-{{ loop.index }}" class="card">
+                                <div class="card-header">
+                                    <a class="card-link" data-toggle="collapse" href="#collapseOther-{{ loop.index }}">Other headers</a>
+                                </div>
+        
+                                <div id="collapseOther-{{ loop.index }}" class="collapse">
+                                    <div class="card-body">
+                                        <table>
+                                            {% for header, data in item.other_headers.items() %}
+                                            <tr>
+                                              <td>{{ header | e}}</td>
+                                              <td style="word-break: break-all">{{ data | e }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="rawHeader-{{ loop.index }}" class="card">
+                                <div class="card-header">
+                                    <a class="card-link" data-toggle="collapse" href="#collapseRawHeader-{{ loop.index }}">Raw header</a>
+                                </div>
+        
+                                <div id="collapseRawHeader-{{ loop.index }}" class="collapse">
+                                    <div class="card-body">
+                                        <pre style="white-space: pre-wrap; word-break: break-all;">{{ item.raw_header | e }}</pre>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="emailBody-{{ loop.index }}" class="card">
+                                <div class="card-header">
+                                    <a class="card-link" data-toggle="collapse" href="#collapseEmailBody-{{ loop.index }}">Email body</a>
+                                </div>
+        
+                                <div id="collapseEmailBody-{{ loop.index }}" class="collapse">
+                                    <div class="card-body">
+                                        <pre style="white-space: pre-wrap; word-break: keep-all;">{{ item.body_text }}</pre>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                        </td>
+                    </tr>
+                        
+                  {% endfor %}
+                </tbody>
+            </table>
+	
+        </div>
+        {% endif %}
+    </div>
+    
+	<!-- Optional JavaScript -->
+	<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+	<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+	<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/bootstrap-table@1.15.5/dist/bootstrap-table.min.js"></script>
+    
+  </body>
+</html>
