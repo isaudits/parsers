@@ -209,8 +209,8 @@ class NmapPort(object):
 
 class NmapScript(object):
     def __init__(self):
-        self.port_script_id=''
-        self.port_script_output=''
+        self.id=''
+        self.output=''
         
 class NmapParser(object):
     '''
