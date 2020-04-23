@@ -60,7 +60,6 @@ def main():
         print(target)
         print('')
         
-    
     # No output directory specified - use same directory as input target file/dir
     if not outdir:
         if os.path.isfile(target):
@@ -76,7 +75,7 @@ def main():
         infile_list.append(target)
     else:
         for infile in os.listdir(target):
-            if os.path.isfile(os.path.join(target,infile)) and infile[-6:] == "nessus":
+            if os.path.isfile(os.path.join(target,infile)) and infile[-3:] == "xml":
                 infile_list.append(os.path.join(target,infile))
 
     
@@ -135,7 +134,7 @@ def chop_port(portstring):
 		portstringlist = portstring.split("/")
 		portinfo['service'] = portstringlist[0]
 		portinfo['protocol'] = portstringlist[1]
-		portinfo['port'] = "N/A"
+		portinfo['port'] = "0"
 		
 	# cases where port looks like "ntp(123/udp)" 
 	elif "(" in portstring:	
@@ -186,7 +185,7 @@ class OpenvasReportItem(object):
         self.severity=0.0
         self.description=''
         self.original_threat=''
-        self.original_severity=''
+        self.original_severity=0.0
         self.notes=''
         self.overrides=''
         
@@ -197,7 +196,7 @@ class OpenvasReportItem(object):
         self.cvss_base=0.0
         self.cve=[]
         self.bid=[]
-        self.xref=[]
+        self.url=[]
         
         #tags
         self.cvss_base_vector=''
@@ -300,21 +299,28 @@ class OpenvasParser(object):
                 for item in items:
                     node = result.find(item)
                     if node is not None:
-                        setattr(openvas_report_item,item,node.text)
-                
+                        if item == 'severity' or item == 'original_severity':
+                            setattr(openvas_report_item,item,float(node.text))
+                        else:
+                            setattr(openvas_report_item,item,node.text)
                 
                 openvas_report_item.oid = result.find('nvt').attrib['oid']
                 items=['type','family','cvss_base']
                 for item in items:
                     node = result.find('.nvt/'+item)
                     if node is not None:
-                        setattr(openvas_report_item,item,node.text)
+                        if item == 'cvss_base':
+                            setattr(openvas_report_item,item,float(node.text))
+                        else:
+                            setattr(openvas_report_item,item,node.text)
                     
-                items=['cve','bid','xref']
+                items=['cve','bid','url']
                 for item in items:
-                    node = result.find('.nvt/'+item)
-                    if node is not None:
-                        setattr(openvas_report_item,item,node.text.split(','))
+                    if item.find('.nvt/refs/ref/[@type="'+item+'"]') is not None:
+                        array=[]
+                        for ref in result.findall('.nvt/refs/ref/[@type="'+item+'"]'):
+                            array.append(ref.attrib['id'])
+                        setattr(openvas_report_item,item,array)
                 
                 #Parse info from tags element text
                 tags = result.find('./nvt/tags').text
@@ -324,12 +330,6 @@ class OpenvasParser(object):
                     for item in items:
                         if item in tags:
                             setattr(openvas_report_item,item,tags[item])
-                
-                #Do a little cleanup on some of the values
-                openvas_report_item.xref = [text.replace('URL:','') for text in openvas_report_item.xref]
-                openvas_report_item.xref = [text.replace(' ','') for text in openvas_report_item.xref]
-                if openvas_report_item.bid[0] == 'NOBID':
-                    openvas_report_item.bid = []
                 
                 #Find appropriate host and append report finding as report_item
                 for host in openvas_report.hosts:
