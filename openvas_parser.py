@@ -261,10 +261,10 @@ class OpenvasParser(object):
             for host in report.findall('./host'):
                 openvas_report_host = OpenvasReportHost()
                 
-                openvas_report_host.id = host.find('./asset').attrib['asset_id']
+                openvas_report_host.name = host.find('ip').text
                 
-                if openvas_report_host.id:
-                    openvas_report_host.name = host.find('ip').text
+                if openvas_report_host.name:
+                    
                     openvas_report_host.host_ip = openvas_report_host.name
                     openvas_report_host.scan_start = host.find('start').text
                     openvas_report_host.scan_end = host.find('end').text
@@ -289,6 +289,7 @@ class OpenvasParser(object):
             for result in report.findall('./results/result'):
                 openvas_report_item = OpenvasReportItem()
                 openvas_report_item.name = result.find('./name').text
+                openvas_report_item.host = result.find('./host').text
                 openvas_report_item.asset_id = result.find('./host/asset').attrib['asset_id']
                 portinfo = chop_port(result.find('./port').text)
                 openvas_report_item.port = portinfo['port']
@@ -333,7 +334,7 @@ class OpenvasParser(object):
                 
                 #Find appropriate host and append report finding as report_item
                 for host in openvas_report.hosts:
-                    if host.id == openvas_report_item.asset_id:
+                    if host.name == openvas_report_item.host:
                         host.report_items.append(openvas_report_item)
                     
         self.reports.append(openvas_report)
