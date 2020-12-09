@@ -119,16 +119,30 @@ def nmap_out_to_html(infile, outfile, xsl=''):
     
     output = ''
     dom = etree.parse(infile)
+    xslt = None
     
     try:
         if xsl:
             xslt = etree.parse(xsl)
         else:
-            docroot = dom.getroot()
-            pi = docroot.getprevious()
-            if isinstance(pi,etree._XSLTProcessingInstruction):
-                xsl = pi.attrib['href']
-                xslt = pi.parseXSL()
+            # XSL file not specified - lets try some default locations
+            paths=[]
+            paths.append(os.path.join('/', 'usr', 'share', 'nmap', 'nmap.xsl'))
+            paths.append(os.path.join('/', 'usr', 'local', 'share', 'nmap', 'nmap.xsl'))
+
+            for path in paths:
+                if os.path.exists(path):
+                    print('XSL file found at '+path)
+                    xslt = etree.parse(path)
+                    break
+            
+            # still don't have XSL transform; lets try the path specified in the XML file
+            if not xslt:
+                docroot = dom.getroot()
+                pi = docroot.getprevious()
+                if isinstance(pi,etree._XSLTProcessingInstruction):
+                    xsl = pi.attrib['href']
+                    xslt = pi.parseXSL()
         
         transform = etree.XSLT(xslt)
         output = etree.tostring(transform(dom), pretty_print=True)
@@ -150,7 +164,7 @@ def nmap_out_to_txt(infile, outfile):
     for child in e.iter('output'):
         output += child.text
     
-    output_file(outfile,output)
+    output_file(outfile, bytes(output,'utf-8'))
     
 def output_file(outfile, output, overwrite=True):
     if overwrite == True:
