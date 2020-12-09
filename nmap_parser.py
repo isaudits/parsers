@@ -135,11 +135,12 @@ def nmap_out_to_html(infile, outfile, xsl=''):
         
         output_file(outfile,output)
         
-    except:
+    except Exception as e:
         print('')
         print('[!] Error parsing XSL for file ')
         print(' -  make sure that the XSL transform is present and valid:')
         print(' -  ' + xsl)
+        print(str(e))
     
 def nmap_out_to_txt(infile, outfile):
     output = ''
@@ -153,9 +154,9 @@ def nmap_out_to_txt(infile, outfile):
     
 def output_file(outfile, output, overwrite=True):
     if overwrite == True:
-        f = open(outfile, 'w+')
+        f = open(outfile, 'wb+')
     else:
-        f = open(outfile, 'w')
+        f = open(outfile, 'wb')
     
     f.write(output)
     f.close
