@@ -6,6 +6,8 @@ Miscellaneous parsing scripts for penetration testing:
 - nmap_parser.py - parses nmap xml output
     - Can process a single file or a directory of files
     - Exports scan output to HTML and text
+    - Parse .xml files into custom object classes for further manipulation
+    - Merge multiple nmap files (logic borrowed from <https://github.com/CBHue/nMap_Merger>)
     
 - nessus_parser.py - parses nessus xml output
     - Merge multiple .nessus files into a single output file

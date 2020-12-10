@@ -6,6 +6,8 @@ TJS Deemer Dana LLP
 
 Nmap XML output parsing functions / utilities
 
+Merge logic borrowed from https://github.com/CBHue/nMap_Merger
+
 See README.md for licensing information and credits
 
 '''
@@ -49,6 +51,10 @@ def main():
     parser.add_argument('--xsl', action='store',
                         help='Nmap xml stylesheet (defaults to xml-stylesheet from nmap XML files)'
     )
+    parser.add_argument('-m', '--merge',
+                        help='Merge nessus output files',
+                        action='store_true'
+    )
     parser.add_argument('-p', '--parse',
                         help='Parse nessus output files',
                         action='store_true'
@@ -60,6 +66,7 @@ def main():
     xsl = args.xsl
     is_text = args.text
     is_html = args.html
+    is_merge = args.merge
     is_parse = args.parse
     
     #------------------------------------------------------------------------------
@@ -82,11 +89,21 @@ def main():
         print('no output directory specified - using ' + outdir)
         print('')
     
+    parser = None
+
     if is_parse:
-        parse_xml(target)
+        parser = NmapParser(target)
+        parser.parse()
+        print(parser.reports)
+
+    if is_merge:
+        if not parser:
+            parser = NmapParser(target)
+        parser.merge(outdir)
+
     
     # No output options specified - enable all!
-    elif not is_text and not is_html:
+    elif not is_text and not is_html and not is_parse and not is_merge:
         is_text = True
         is_html = True
     
@@ -175,9 +192,6 @@ def output_file(outfile, output, overwrite=True):
     f.write(output)
     f.close
 
-def parse_xml(filename_xml):
-    parser = NmapParser(filename_xml)
-
 
 class NmapScan(object):
     def __init__(self):
@@ -231,8 +245,9 @@ class NmapParser(object):
     '''
     TODO - add better file validation and move into a separate method
     '''
-    def __init__(self, filename_xml='', xml=''):
+    def __init__(self, filename_xml='', xml='', outdir=''):
         self.reports=[]
+        self.outdir=outdir
         
         if filename_xml:
             # Parse input values in order to find valid .xml files
@@ -240,12 +255,17 @@ class NmapParser(object):
             if os.path.isdir(filename_xml):
                 if not filename_xml.endswith("/"):
                     filename_xml += "/"
+                
+                if not self.outdir:
+                    self.outdir=filename_xml
+
                 # Automatic searching of files into specified directory
                 for path, dirs, files in os.walk(filename_xml):
                     for f in files:
                         if f.endswith(".xml"):
                             self._xml_source.append(filename_xml + f)
                     break
+
             elif filename_xml.endswith(".xml"):
                 if not os.path.exists(filename_xml):
                     print("[!] File specified '%s' not exist!" % filename_xml)
@@ -255,14 +275,9 @@ class NmapParser(object):
             if not self._xml_source:
                 print("[!] No file .xml to parse was found!")
                 exit(3)
-            
-            # For each .xml file found...
-            for file_nmaprun in self._xml_source:
-                # Parse and extract information
-                self._parse_results(file_nmaprun)
                 
         elif xml:
-            self._parse_results('', xml)
+            self._xml = xml
             
         else:
             print("[!] No xml data passed to parser!")
@@ -360,6 +375,52 @@ class NmapParser(object):
             nmap_scan.hosts.append(nmap_host)
             
         self.reports.append(nmap_scan)
+
+    def parse(self):
+
+        # For each .xml file found...
+        if self._xml_source:
+            for file_nmaprun in self._xml_source:
+                # Parse and extract information
+                self._parse_results(file_nmaprun)
+        elif self._xml:
+            self._parse_results('', xml)
+
+
+    def merge(self, outdir=''):
+        if not outdir:
+            outdir=self.outdir
+
+        if len(self._xml_source) == 1:
+            print('Single xml file provided; aborting merge')
+        else:
+
+            dummy_header  = '<?xml version="1.0" encoding="UTF-8"?>'
+            dummy_header += '<!DOCTYPE nmaprun>'
+            dummy_header += '<?xml-stylesheet href="file:///usr/share/nmap/nmap.xsl" type="text/xsl"?>'
+            dummy_header += '<!-- Nmap merged with nmap_parser.py - https://github.com/isaudits/parsers/blob/master/nmap_parser.py -->'
+            dummy_header += '<nmaprun scanner="nmap" args="nmap" version="7.70" xmloutputversion="1.04">'
+            dummy_header += '<scaninfo type="syn" protocol="tcp" numservices="1" services="1"/>'
+            dummy_header += '<verbose level="0"/>'
+            dummy_header += '<debugging level="0"/>'
+
+            output = dummy_header
+
+            for file_nmaprun in self._xml_source:
+                tree = etree.parse(file_nmaprun)
+                for host in tree.findall('host'):
+                    output += etree.tostring(host, encoding='unicode', method='xml')
+
+            dummy_footer  = '<runstats><finished time="1" timestr="Wed Sep  0 00:00:00 0000" elapsed="0" summary="Nmap done at Wed Sep  0 00:00:00 0000; 0 IP address scanned in 0.0 seconds" exit="success"/>'
+            dummy_footer += '</runstats>'
+            dummy_footer += '</nmaprun>'
+
+            output += '\n' + dummy_footer
+
+            outfile=os.path.join(outdir,"merged.xml")
+
+            output_file(outfile,bytes(output,'utf-8'))
+
             
     
 if __name__ == '__main__':
