@@ -246,12 +246,14 @@ class NmapParser(object):
     TODO - add better file validation and move into a separate method
     '''
     def __init__(self, filename_xml='', xml='', outdir=''):
+        self._xml_source = []
+        self._xml=''
         self.reports=[]
         self.outdir=outdir
         
         if filename_xml:
             # Parse input values in order to find valid .xml files
-            self._xml_source = []
+            
             if os.path.isdir(filename_xml):
                 if not filename_xml.endswith("/"):
                     filename_xml += "/"
@@ -384,7 +386,9 @@ class NmapParser(object):
                 # Parse and extract information
                 self._parse_results(file_nmaprun)
         elif self._xml:
-            self._parse_results('', xml)
+            self._parse_results('', self._xml)
+        else:
+            print('no data to parse?!?')
 
 
     def merge(self, outdir=''):
