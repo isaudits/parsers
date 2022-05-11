@@ -290,7 +290,7 @@ def main(argv):
         dirlist = os.listdir(filepath)
         for file in dirlist:
             if file.endswith('.eml') or file.endswith('.msg'):
-                file_list.append(filepath + file)
+                file_list.append(os.path.join(filepath,file))
                 
         if not outpath:
             outpath = os.path.join(filepath, 'output')
