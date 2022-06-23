@@ -290,7 +290,7 @@ class OpenvasParser(object):
                 openvas_report_item = OpenvasReportItem()
                 openvas_report_item.name = result.find('./name').text
                 openvas_report_item.host = result.find('./host').text
-                openvas_report_item.asset_id = result.find('./host/asset').attrib['asset_id']
+                #openvas_report_item.asset_id = result.find('./host/asset').attrib['asset_id']
                 portinfo = chop_port(result.find('./port').text)
                 openvas_report_item.port = portinfo['port']
                 openvas_report_item.protocol = portinfo['protocol']
