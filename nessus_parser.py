@@ -17,6 +17,7 @@ See README.md for licensing information and credits
 '''
 import argparse
 import os
+import re
 
 try:
     from lxml import etree
@@ -217,6 +218,12 @@ class NessusReportItem(object):
         self.cve=[]
         self.cvss_base_score=0.0
         self.cvss_vector=''
+        self.cvss_temporal_score=0.0
+        self.cvss_temporal_vector=''
+        self.cvss3_base_score=0.0
+        self.cvss3_vector=''
+        self.cvss3_temporal_score=0.0
+        self.cvss3_temporal_vector=''
         self.description=''
         self.exploit_available=''
         self.exploit_framework_core=''
@@ -338,10 +345,13 @@ class NessusParser(object):
                         nessus_report_item.svc_name = item.get('svc_name')
                         nessus_report_item.severity = int(item.get('severity'))
 
+                        
+
                         # Report item child nodes to be extracted are enumerated in the following arrays;
                         # text_nodes contains all unique nodes
                         # array_nodes contains nodes in which multiple instances can be found; these are returned as a list
-                        text_nodes=['agent','cert','cpe','cvss_base_score','cvss_vector','description','exploit_available','exploit_framework_core',
+                        text_nodes=['agent','cert','cpe','cvss_base_score','cvss_vector','cvss_temporal_score','cvss_temporal_vector',
+                                    'cvss3_base_score','cvss3_vector','cvss3_temporal_score','cvss3_temporal_vector', 'description','exploit_available','exploit_framework_core',
                                     'exploit_framework_metasploit','exploitability_ease','patch_publication_date','plugin_modification_date','plugin_type',
                                     'risk_factor','script_version','see_also','solution','stig_severity','synopsis','vuln_publication_date','plugin_output']
                         
@@ -349,7 +359,14 @@ class NessusParser(object):
 
                         for node in text_nodes:
                             if item.find(node) is not None:
-                                setattr(nessus_report_item,node,item.find(node).text)
+                                node_value = item.find(node).text
+
+                                # clean up CVSS vector data
+                                if 'cvss' in node and 'vector' in node:
+                                    node_value = re.sub(r'.*?AV:', 'AV:', node_value)
+                                    node_value = re.sub(r'.*?E:', 'E:', node_value)
+
+                                setattr(nessus_report_item,node,node_value)
                                 
                         for node in array_nodes:
                             if item.find(node) is not None:
