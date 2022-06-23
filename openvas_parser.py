@@ -331,6 +331,33 @@ class OpenvasParser(object):
                     for item in items:
                         if item in tags:
                             setattr(openvas_report_item,item,tags[item])
+
+                #Cleanup some of the screwball formatting from OpenVAS
+                openvas_report_item.name = openvas_report_item.name.replace(")-", ") - ")
+                openvas_report_item.name = openvas_report_item.name.replace("s(", "s (")
+                openvas_report_item.name = openvas_report_item.name.replace("e(", "e (")
+                openvas_report_item.summary = openvas_report_item.summary.replace("\n  -", "\n•")
+                openvas_report_item.summary = openvas_report_item.summary.replace("\n -", "\n•")
+                openvas_report_item.summary = openvas_report_item.summary.replace("\n\n  ", "\n\n")
+                openvas_report_item.summary = openvas_report_item.summary.replace("\n\n ", "\n\n")
+                openvas_report_item.summary = openvas_report_item.summary.replace("     ", " ")
+                openvas_report_item.summary = openvas_report_item.summary.replace("\n    ", " ")
+                openvas_report_item.summary = openvas_report_item.summary.replace("\n   ", " ")
+                openvas_report_item.summary = openvas_report_item.summary.replace("\n  ", " ")
+                openvas_report_item.summary = openvas_report_item.summary.replace("\n ", " ")
+                openvas_report_item.insight = openvas_report_item.insight.replace("\n  -", "\n•")
+                openvas_report_item.insight = openvas_report_item.insight.replace("\n -", "\n•")
+                openvas_report_item.insight = openvas_report_item.insight.replace("\n\n  ", "\n\n")
+                openvas_report_item.insight = openvas_report_item.insight.replace("\n\n ", "\n\n")
+                openvas_report_item.insight = openvas_report_item.insight.replace("     ", " ")
+                openvas_report_item.insight = openvas_report_item.insight.replace("\n    ", " ")
+                openvas_report_item.insight = openvas_report_item.insight.replace("\n   ", " ")
+                openvas_report_item.insight = openvas_report_item.insight.replace("\n  ", " ")
+                openvas_report_item.insight = openvas_report_item.insight.replace("\n ", " ")
+                openvas_report_item.solution = openvas_report_item.solution.replace("\n  -", "\n•")
+                openvas_report_item.solution = openvas_report_item.solution.replace("\n -", "\n•")
+                openvas_report_item.solution = openvas_report_item.solution.replace("\n  ", " ")
+                openvas_report_item.solution = openvas_report_item.solution.replace("\n ", " ")
                 
                 #Find appropriate host and append report finding as report_item
                 for host in openvas_report.hosts:

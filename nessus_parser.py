@@ -358,7 +358,29 @@ class NessusParser(object):
                                     array.append(hit.text)
                                 setattr(nessus_report_item,node,array)
                         
+                        #Cleanup some of the screwball formatting from Nessus
+                        nessus_report_item.plugin_name = nessus_report_item.plugin_name.replace(")-", ") - ")
+                        nessus_report_item.plugin_name = nessus_report_item.plugin_name.replace("s(", "s (")
+                        nessus_report_item.plugin_name = nessus_report_item.plugin_name.replace("e(", "e (")
+                        nessus_report_item.synopsis = nessus_report_item.synopsis.replace("\n  ", " ")
+                        nessus_report_item.description = nessus_report_item.description.replace("\n  -", "\n•")
+                        nessus_report_item.description = nessus_report_item.description.replace("\n -", "\n•")
+                        nessus_report_item.description = nessus_report_item.description.replace("\n\n  ", "\n\n")
+                        nessus_report_item.description = nessus_report_item.description.replace("\n\n ", "\n\n")
+                        nessus_report_item.description = nessus_report_item.description.replace("     ", " ")
+                        nessus_report_item.description = nessus_report_item.description.replace("\n    ", " ")
+                        nessus_report_item.description = nessus_report_item.description.replace("\n   ", " ")
+                        nessus_report_item.description = nessus_report_item.description.replace("\n  ", " ")
+                        nessus_report_item.description = nessus_report_item.description.replace("\n ", " ")
+                        nessus_report_item.solution = nessus_report_item.solution.replace("\n  -", "\n•")
+                        nessus_report_item.solution = nessus_report_item.solution.replace("\n -", "\n•")
+                        nessus_report_item.solution = nessus_report_item.solution.replace("\n  ", " ")
+                        nessus_report_item.solution = nessus_report_item.solution.replace("\n ", " ")
+
+
                         nessus_report_host.report_items.append(nessus_report_item)
+
+                        
         
         self.reports.append(nessus_report)
 
