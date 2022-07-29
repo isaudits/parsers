@@ -303,11 +303,15 @@ def main(argv):
     result = []
     
     for file in file_list:
-        email = MailItem(filepath=file)
-        
-        # if email.message is blank then parsing was unsuccessful...
-        if email.message:
-            result.append(email)
+        try:
+            email = MailItem(filepath=file)
+            
+            # if email.message is blank then parsing was unsuccessful...
+            if email.message:
+                result.append(email)
+                
+        except:
+            print("Error parsing "+file+"...skipping...")
             
     result.sort(key=lambda x: x.date, reverse=False)
     
