@@ -56,7 +56,7 @@ def main():
                         action='store_true'
     )
     parser.add_argument('-p', '--parse',
-                        help='Parse nessus output files',
+                        help='Parse nessus output files and export host and service data to greppable output',
                         action='store_true'
     )
     args = parser.parse_args()
@@ -94,7 +94,63 @@ def main():
     if is_parse:
         parser = NmapParser(target)
         parser.parse()
-        print(parser.reports)
+
+        host_list = []
+        service_array = {}
+
+        for report in parser.reports:
+
+            for host in report.hosts:
+                host_list.append(host.addr_ipv4)
+
+                
+                excluded_services = ['unknown', 'tcpwrapped']
+                excluded_version_text = ['Microsoft HTTPAPI']
+
+                for port in host.ports:
+                    exclude = False
+
+                    if port.svc_name in excluded_services:
+                        exclude = True
+
+                    for text in excluded_version_text:
+                        try:
+                            if text in port.svc_version:
+                                exclude = True
+                        except:
+                            pass
+
+                    if (port.state == 'open') and not exclude:
+
+                        if 'http' in port.svc_name:
+                            service_name = 'http'
+                        else:
+                            service_name = port.svc_name
+
+                        service_array.setdefault((service_name, port.portid, port.protocol),[]).append(host.addr_ipv4)
+
+        if not os.path.exists(os.path.join(outdir, 'parsed')):
+            os.mkdir(os.path.join(outdir, 'parsed'))
+
+        if not os.path.exists(os.path.join(outdir, 'parsed', 'services')):
+            os.mkdir(os.path.join(outdir, 'parsed', 'services'))
+
+        output = ''
+        for host in host_list:
+            output += host + "\n"
+
+        output_file(os.path.join(outdir, 'parsed', 'hosts.txt'), bytes(output,'utf-8'))
+
+
+        for service,hosts in service_array.items():
+            output=''
+            filename = service[0] + '-' + service[1] + '-' + service[2] + '.txt'
+
+            for host in hosts:
+                output += host + "\n"
+
+            output_file(os.path.join(outdir, 'parsed', 'services', filename), bytes(output,'utf-8'))
+            
 
     if is_merge:
         if not parser:
