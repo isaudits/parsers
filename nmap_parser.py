@@ -202,10 +202,11 @@ def nmap_out_to_html(infile, outfile, xsl=''):
             paths=[]
             paths.append(os.path.join('/', 'usr', 'share', 'nmap', 'nmap.xsl'))
             paths.append(os.path.join('/', 'usr', 'local', 'share', 'nmap', 'nmap.xsl'))
+            paths.append(os.path.join('/', 'opt', 'homebrew', 'share', 'nmap', 'nmap.xsl'))
 
             for path in paths:
                 if os.path.exists(path):
-                    print('XSL file found at '+path)
+                    #print('XSL file found at '+path)
                     xslt = etree.parse(path)
                     break
             
