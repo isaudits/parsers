@@ -224,14 +224,19 @@ class NessusReportItem(object):
         self.cvss3_vector=''
         self.cvss3_temporal_score=0.0
         self.cvss3_temporal_vector=''
+        self.cvss_score_source=''
         self.description=''
         self.exploit_available=''
+        self.exploit_code_maturity=''
+        self.exploit_framework_canvas=''
         self.exploit_framework_core=''
         self.exploit_framework_metasploit=''
         self.exploitability_ease=''
+        self.exploited_by_malware=''
         self.fname=''
         self.iava=[]
         self.msft=[]
+        self.metasploit_name=''
         self.osvdb=[]
         self.patch_publication_date=''
         #SKIP plugin_name since defined in host attribute section above
@@ -351,9 +356,11 @@ class NessusParser(object):
                         # text_nodes contains all unique nodes
                         # array_nodes contains nodes in which multiple instances can be found; these are returned as a list
                         text_nodes=['agent','cert','cpe','cvss_base_score','cvss_vector','cvss_temporal_score','cvss_temporal_vector',
-                                    'cvss3_base_score','cvss3_vector','cvss3_temporal_score','cvss3_temporal_vector', 'description','exploit_available','exploit_framework_core',
-                                    'exploit_framework_metasploit','exploitability_ease','patch_publication_date','plugin_modification_date','plugin_type',
-                                    'risk_factor','script_version','see_also','solution','stig_severity','synopsis','vuln_publication_date','plugin_output']
+                                    'cvss3_base_score','cvss3_vector','cvss3_temporal_score','cvss3_temporal_vector', 'cvss_score_source',
+                                    'description', 'exploit_available', 'exploit_code_maturity', 'exploit_framework_core', 'exploit_framework_canvas',
+                                    'exploit_framework_metasploit','exploitability_ease', 'exploited_by_malware', 'metasploit_name', 
+                                    'patch_publication_date','plugin_modification_date','plugin_type', 'risk_factor','script_version',
+                                    'see_also','solution','stig_severity','synopsis','vuln_publication_date','plugin_output']
                         
                         array_nodes=['bid','cve','iava','msft','osvdb','xref']
 
@@ -363,8 +370,7 @@ class NessusParser(object):
 
                                 # clean up CVSS vector data
                                 if 'cvss' in node and 'vector' in node:
-                                    node_value = re.sub(r'.*?AV:', 'AV:', node_value)
-                                    node_value = re.sub(r'.*?E:', 'E:', node_value)
+                                    node_value = node_value.replace('CVSS2#','')
 
                                 setattr(nessus_report_item,node,node_value)
                                 
