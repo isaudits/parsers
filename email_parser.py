@@ -310,8 +310,10 @@ def main(argv):
             if email.message:
                 result.append(email)
                 
-        except:
-            print("Error parsing "+file+"...skipping...")
+        except Exception as e:
+            print(e)
+            print("Error parsing "+file+"...skipping...\n\n")
+            
             
     result.sort(key=lambda x: x.date, reverse=False)
     
